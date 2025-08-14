@@ -7,10 +7,10 @@ async function getFtpClient(user, password, secure = false) {
     client.ftp.verbose = false;
     try {
         await client.access({
-            host: process.env.FTP_HOST, //"127.0.0.1",
-            user, //user: "Felipe",
-            password, //password: "@Fpo_1989",
-            secure //secure: false
+            host: process.env.FTP_HOST, 
+            user, 
+            password, 
+            secure 
         });
         return client;
     } catch (err) {

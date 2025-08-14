@@ -12,10 +12,14 @@ const PORT = 3000;
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
 const SECRET_KEY = process.env.SECRET_KEY;
+const SECRET_KEYCrypto = process.env.SECRET_KEYCrypto;
 // Middleware para subir archivos
 const upload = multer({ dest: 'uploads/' });
 //AuthGuard
 const authGuard = require('./authGuard');
+//Crypto JS
+const CryptoJS = require('crypto-js');
+const { url } = require("inspector");
 
 app.use(cors());
 app.use(express.json()); // para JSON
@@ -28,12 +32,18 @@ app.use((req, res, next) => {
 
 // Ruta para obtener token (ejemplo básico)
 app.post('/login', async (req, res) => {
-    const { username, password } = req.body;
+    const { payload } = req.body;
+    const bytes = CryptoJS.AES.decrypt(payload, SECRET_KEYCrypto);
+    const decryptedData = bytes.toString(CryptoJS.enc.Utf8);
+    
+    if (!decryptedData) {
+        return res.status(400).json({ error: 'No se pudo descifrar el payload' });
+    }
+
+    const { username, password } = JSON.parse(decryptedData);
 
     const client = await getFtpClient(username, password);
     try {
-        // Crear payload para el token
-        const payload = { username };
         const token = jwt.sign({ username }, SECRET_KEY, { expiresIn: '1h' });
         res.json({ token });
     } catch (err) {
@@ -45,9 +55,18 @@ app.post('/login', async (req, res) => {
 });
 
 //Listar Archivos
-app.post("/ftp/list", authGuard, async (req, res) => {
-    const { username, password } = req.body;
-    console.log("list: ", username);
+app.post("/ftp/list", async (req, res) => {
+    const { payload } = req.body;
+    console.log('payload: ', payload);
+    const bytes = CryptoJS.AES.decrypt(payload, SECRET_KEYCrypto);
+    const decryptedData = bytes.toString(CryptoJS.enc.Utf8);
+    console.log('decryptedData: ', decryptedData);
+    if (!decryptedData) {
+        return res.status(400).json({ error: 'No se pudo descifrar el payload' });
+    }
+
+    const { username, password } = JSON.parse(decryptedData);
+    console.log('username: ', username);
 
     const client = await getFtpClient(username, password);
     try {
@@ -55,10 +74,13 @@ app.post("/ftp/list", authGuard, async (req, res) => {
         const files = list.map(file => ({
             name: file.name,
             size: file.size,
-            type: file.type, // 'File' o 'Directory'
-            modifiedAt: file.modifiedAt
+            //type: file.type, // 'File' o 'Directory'
+            type: typeof file.type === 'string' ? file.type : 'string',
+            modifiedAt: file.modifiedAt,
+            url: `http://localhost:${PORT}/ftp/list/${encodeURIComponent(file.name)}`
         }));
 
+        console.log('Archivos',files);
         res.json(files);
     } catch (err) {
         console.error("Error al listar archivos:", err);
