@@ -30,6 +30,10 @@ app.use((req, res, next) => {
     next();
 });
 
+app.get('/api/saludo', (req, res) => {
+  res.send('Hola desde Node.js en IIS!');
+});
+
 // Ruta para obtener token (ejemplo básico)
 app.post('/login', async (req, res) => {
     const { payload } = req.body;
@@ -57,16 +61,16 @@ app.post('/login', async (req, res) => {
 //Listar Archivos
 app.post("/ftp/list", async (req, res) => {
     const { payload } = req.body;
-    console.log('payload: ', payload);
+    //console.log('payload: ', payload);
     const bytes = CryptoJS.AES.decrypt(payload, SECRET_KEYCrypto);
     const decryptedData = bytes.toString(CryptoJS.enc.Utf8);
-    console.log('decryptedData: ', decryptedData);
+    //console.log('decryptedData: ', decryptedData);
     if (!decryptedData) {
         return res.status(400).json({ error: 'No se pudo descifrar el payload' });
     }
 
     const { username, password } = JSON.parse(decryptedData);
-    console.log('username: ', username);
+    //console.log('username: ', username);
 
     const client = await getFtpClient(username, password);
     try {
@@ -74,13 +78,13 @@ app.post("/ftp/list", async (req, res) => {
         const files = list.map(file => ({
             name: file.name,
             size: file.size,
-            //type: file.type, // 'File' o 'Directory'
-            type: typeof file.type === 'string' ? file.type : 'string',
+            type: file.type, // 'File' o 'Directory'
+            //type: typeof file.type === 'string' ? file.type : 'string',
             modifiedAt: file.modifiedAt,
             url: `http://localhost:${PORT}/ftp/list/${encodeURIComponent(file.name)}`
         }));
 
-        console.log('Archivos',files);
+        //console.log('Archivos',files);
         res.json(files);
     } catch (err) {
         console.error("Error al listar archivos:", err);
@@ -93,7 +97,7 @@ app.post("/ftp/list", async (req, res) => {
 //Descargar Archivo
 app.post('/ftp/download/:filename', authGuard, async (req, res) => {
     const { username, password } = req.body;
-    console.log("download: ", username);
+    //console.log("download: ", username);
 
     const client = await getFtpClient(username, password);
     const { filename } = req.params;
@@ -113,7 +117,7 @@ app.post('/ftp/download/:filename', authGuard, async (req, res) => {
 //Subir Archivo
 app.post('/ftp/upload', authGuard, upload.single('file'), async (req, res) => {
     const { username, password } = req.body;
-    console.log("updload: ", username);
+    //console.log("updload: ", username);
 
     if (!username || !password) {
       return res.status(400).send("Credenciales faltantes");
@@ -150,7 +154,7 @@ app.delete('/ftp/delete/:filename', authGuard, async (req, res) => {
         await client.remove(filename);
         res.json({ message: `Archivo "${filename}" eliminado correctamente` });
     } catch (err) {
-        console.error("Error al eliminar archivo:", err.message);
+        //console.error("Error al eliminar archivo:", err.message);
         res.status(500).send(`Error al eliminar archivo "${filename}"`);
     } finally {
         client.close();
