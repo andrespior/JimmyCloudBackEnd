@@ -7,7 +7,8 @@ const path = require('path');
 const ftp = require("basic-ftp");
 const cors = require("cors");
 const app = express();
-const PORT = 3000;
+//const PORT = process.env.PORT;
+const port = process.env.PORT || 4000;
 //Token
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
@@ -59,7 +60,7 @@ app.post('/login', async (req, res) => {
 });
 
 //Listar Archivos
-app.post("/ftp/list", async (req, res) => {
+app.post("/ftp/list",authGuard, async (req, res) => {
     const { payload } = req.body;
     //console.log('payload: ', payload);
     const bytes = CryptoJS.AES.decrypt(payload, SECRET_KEYCrypto);
@@ -80,8 +81,7 @@ app.post("/ftp/list", async (req, res) => {
             size: file.size,
             type: file.type, // 'File' o 'Directory'
             //type: typeof file.type === 'string' ? file.type : 'string',
-            modifiedAt: file.modifiedAt,
-            url: `http://localhost:${PORT}/ftp/list/${encodeURIComponent(file.name)}`
+            modifiedAt: file.modifiedAt
         }));
 
         //console.log('Archivos',files);
@@ -162,4 +162,4 @@ app.delete('/ftp/delete/:filename', authGuard, async (req, res) => {
 });
 
 //Inicio Servidor
-app.listen(3000, () => console.log("Servidor corriendo en puerto 3000"));
+app.listen(port, () => console.log(`Servidor corriendo en puerto ${port}`));
